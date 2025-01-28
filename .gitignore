@@ -5,3 +5,7 @@ test
 .clang-format
 
 *.so
+*.o
+
+app1
+app2
