@@ -13,9 +13,6 @@ all: mylib.so program1 program2
 mylib.so:
 	${CXX} ${LIB_FLAGS} -c ${LIB_SRC} -o ${LIB_TARGET}
 
-test:
-	${CXX} ${CXXFLAGS} test.cc -o test -L. -l${LIB_NAME}
-
 # !!!! do i even need flags?
 EXEC_1 = app1
 EXEC_2 = app2
@@ -27,3 +24,5 @@ program2: mylib.so
 
 clean:
 	rm -rf test ${LIB_TARGET} *.o *.so ${EXEC_1} ${EXEC_2}
+
+rebuild: clean all

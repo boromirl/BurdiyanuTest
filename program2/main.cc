@@ -89,4 +89,23 @@ public:
   // !!! void shutdown()? i don't need it, but i may make it
 };
 
-int main() { return 0; }
+int main() {
+  TCPServer server(5000);
+  server.establish();
+  server.connectToClient();
+
+  while (1) {
+    std::string str = server.readFromClient();
+    bool res = func_3(str);
+    if (res) {
+      std::cout << "== Successfully got the right message: \"" << str
+                << "\" ==" << std::endl;
+    } else {
+      std::cout << "== Error message: \"" << str
+                << "\" is wrong ==" << std::endl;
+    }
+  }
+
+  server.disconnectFromClient();
+  return 0;
+}
