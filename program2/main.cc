@@ -65,16 +65,18 @@ public:
     return true;
   }
 
-  std::string readFromClient() {
-    char buffer[1024];
+  bool readFromClient(std::string &str) {
+    char buffer[255];
     int n = recv(clientfd, buffer, 255, 0); // !!! 255 or more?
     if (n < 0) {
       perror("ERROR reading from socket");
+      return false;
     }
     if (n == 0) { // client disconnected
-      return "";
+      return false;
     }
-    return std::string(buffer, n);
+    str = std::string(buffer, n);
+    return true;
   }
 
   void writeToClient(const std::string &message) {
@@ -95,14 +97,20 @@ int main() {
   server.connectToClient();
 
   while (1) {
-    std::string str = server.readFromClient();
-    bool res = func_3(str);
-    if (res) {
-      std::cout << "== Successfully got the right message: \"" << str
-                << "\" ==" << std::endl;
+    std::string str;
+    if (!server.readFromClient(str)) {
+      server.disconnectFromClient();
+      server.connectToClient();
     } else {
-      std::cout << "== Error message: \"" << str
-                << "\" is wrong ==" << std::endl;
+
+      bool res = func_3(str);
+      if (res) {
+        std::cout << "== Successfully got the right message: \"" << str
+                  << "\" ==" << std::endl;
+      } else {
+        std::cout << "== Error message: \"" << str
+                  << "\" is wrong ==" << std::endl;
+      }
     }
   }
 

@@ -20,7 +20,8 @@ private:
 public:
   TCPClient() : sockfd(-1) {}
 
-  ~TCPClient() { close(sockfd); }
+  ~TCPClient() { // close(sockfd);
+  }
 
   bool establish() { // !!! rename ???
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
