@@ -1,7 +1,5 @@
 #include "mylib.h"
 
-#include <iostream>
-
 void func_1(std::string &str) {
   std::sort(str.rbegin(), str.rend());
 

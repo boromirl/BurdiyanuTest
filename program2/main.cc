@@ -101,8 +101,9 @@ int main() {
     if (!server.readFromClient(str)) {
       server.disconnectFromClient();
       server.connectToClient();
+    } else if (str == "ping") {
+      server.writeToClient("pong");
     } else {
-
       bool res = func_3(str);
       if (res) {
         std::cout << "== Successfully got the right message: \"" << str

@@ -20,8 +20,7 @@ private:
 public:
   TCPClient() : sockfd(-1) {}
 
-  ~TCPClient() { // close(sockfd);
-  }
+  ~TCPClient() { close(sockfd); }
 
   bool establish() { // !!! rename ???
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +32,9 @@ public:
     return true;
   }
 
-  bool connectToServer(std::string hostname, int port) {
+  // !!! default values???
+  bool connectToServer(std::string hostname = "localhost", int port = 5000,
+                       int delay = 3) {
     struct hostent *server;
     struct sockaddr_in serv_addr;
 
@@ -48,13 +49,35 @@ public:
             server->h_length);
     serv_addr.sin_port = htons(port);
 
-    int n = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    if (n < 0) {
-      perror("ERROR connecting to server");
-      return false;
+    bool is_connected = false;
+    int counter = 0;
+    while (!is_connected) {
+      int n = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+      if (n < 0) {
+        perror("ERROR connecting to server");
+        std::cerr << "Retrying (try " << counter + 1 << ") in " << delay
+                  << " seconds..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(delay));
+        counter++;
+      } else {
+        is_connected = true;
+        std::cout << "== Successfully connected to: " << hostname << ":" << port
+                  << " ==" << std::endl;
+      }
     }
 
     return true;
+  }
+
+  bool reconnectToServer() {
+    bool res;
+    close(sockfd);
+    res = establish();
+    if (!res) {
+      return false;
+    }
+    res = connectToServer();
+    return res;
   }
 
   std::string recvFromServer() {
@@ -70,13 +93,20 @@ public:
     return std::string(buffer, n);
   }
 
-  bool sendToServer(std::string message) {
+  int sendToServer(std::string message) {
     int n = send(sockfd, message.c_str(), message.length(), 0);
-    if (n < 0) {
-      perror("ERROR writing to socket");
+    return n;
+  }
+
+  bool checkConnection() {
+    sendToServer("ping");
+    std::string buffer = recvFromServer();
+    std::cout << "== buffer: \"" << buffer << "\" ==" << std::endl;
+    if (buffer == "pong")
+      return true;
+    else {
       return false;
     }
-    return true;
   }
 
   void disconnectFromServer() { close(sockfd); }
@@ -107,7 +137,7 @@ private:
 public:
   ThreadManager() {
     client.establish();
-    client.connectToServer("localhost", 5000);
+    // client.connectToServer("localhost", 5000);
   };
   ~ThreadManager() { client.disconnectFromServer(); };
 
@@ -143,6 +173,7 @@ public:
 
   void job2() {
     std::string str;
+    client.connectToServer();
 
     while (1) {
       std::unique_lock<std::mutex> ul(mtx);
@@ -158,9 +189,15 @@ public:
 
       int res = func_2(str);
 
-      /// !!! dummy before server
       std::cout << "== Send \"" << res << "\" to program 2 ==" << std::endl;
-      client.sendToServer(std::to_string(res));
+
+      while (!client.checkConnection()) {
+        std::cout << "== Not connected. Attempt to reconnect in 3 seconds =="
+                  << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        client.reconnectToServer();
+      }
+      client.sendToServer(str);
     }
   }
 
