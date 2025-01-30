@@ -12,13 +12,13 @@
 class ThreadManager {
 private:
   TCPClient client;
-  // !!! i think it would be better to make a queue. Is it?
   std::queue<std::string> buffer_queue;
   std::mutex mtx;
   std::condition_variable condition_variable;
 
   std::atomic<bool> is_running = true;
 
+  // Проверка вводимой строки (<= 60 символов, только цифры)
   bool is_valid(std::string str) {
     if (str.length() > 64) {
       return false;
@@ -34,12 +34,10 @@ private:
   }
 
 public:
-  ThreadManager() {
-    client.establish();
-    // client.connectToServer("localhost", 5000);
-  };
+  ThreadManager() { client.establish(); };
   ~ThreadManager() { client.disconnectFromServer(); };
 
+  // Работа первого потока
   void job1() {
     std::string str;
 
@@ -48,24 +46,21 @@ public:
       std::cout << "Enter a string: " << std::endl;
       getline(std::cin, str);
 
+      // выход из программы при вводе q
       if (str == "q") {
         is_running = false;
-        condition_variable.notify_one();
+        condition_variable.notify_one(); // оповещение второго потока
         break;
       }
 
       if (is_valid(str)) {
-        // std::cout << "== Entered string \"" << str
-        //           << "\" is valid ==" << std::endl;
         func_1(str);
-        // std::cout << "== String after func_1: \"" << str
-        //           << "\" ==" << std::endl;
 
-        // lock mutex when using shared resource
-        mtx.lock();
+        mtx.lock(); // заблокировать mutex при работе с общим буфером
         this->buffer_queue.push(str);
-        mtx.unlock();
-        this->condition_variable.notify_one();
+        mtx.unlock(); // разблокировать
+
+        this->condition_variable.notify_one(); // оповещение второго потока
       } else {
         std::cout << "\n== The provided string \"" << str
                   << "\" is invalid. It should be 64 characters or "
@@ -76,23 +71,28 @@ public:
     }
   }
 
+  // работа второго потока
   void job2() {
     std::string str;
     client.connectToServer();
 
     while (is_running) {
       std::unique_lock<std::mutex> ul(mtx);
+      // Ожидание оповещения от первого потока.
+      // После оповещения второй поток будет обрабатывать строки из очереди пока
+      // очередь не опустеет, или завершит поток при вводе q
       condition_variable.wait(
           ul, [this]() { return !is_running || !this->buffer_queue.empty(); });
 
+      // завершение работы потока
       if (!is_running) {
         break;
       }
 
-      // lock mutex when using shared resource
+      // mutex автоматически заблокирован методов wait
       str = this->buffer_queue.front();
       this->buffer_queue.pop();
-      ul.unlock();
+      ul.unlock(); // разбликировка mutex
 
       std::cout << "\n== Data received from first thread: \"" << str
                 << "\" ==\n"
@@ -100,8 +100,7 @@ public:
 
       int res = func_2(str);
 
-      // std::cout << "== Send \"" << res << "\" to program 2 ==" << std::endl;
-
+      // Перед отправкой проверяем соединение
       while (!client.checkConnection()) {
         std::cout << "\n== Not connected to the server. Attempt to reconnect "
                      "in 3 seconds ==\n"

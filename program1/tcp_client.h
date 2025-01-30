@@ -14,6 +14,7 @@ public:
 
   ~TCPClient() { close(sockfd); }
 
+  // Создание сокета
   bool establish() {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -24,6 +25,8 @@ public:
     return true;
   }
 
+  // Подключение к серверу по имени и порту. Delay - задержка между попытками
+  // подключения (в секундах)
   bool connectToServer(std::string hostname = "localhost", int port = 5000,
                        int delay = 3) {
     struct hostent *server;
@@ -42,6 +45,7 @@ public:
 
     bool is_connected = false;
     int counter = 0;
+    // Попытки подключения к серверу
     while (!is_connected) {
       int n = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
       if (n < 0) {
@@ -62,6 +66,7 @@ public:
     return true;
   }
 
+  // Переподключение к серверу с обновлением сокета
   bool reconnectToServer() {
     bool res;
     close(sockfd);
@@ -73,6 +78,7 @@ public:
     return res;
   }
 
+  // Получение строки от сервера
   std::string recvFromServer() {
     char buffer[1024];
 
@@ -80,17 +86,20 @@ public:
     if (n < 0) {
       perror("ERROR reading from socket");
     }
-    if (n == 0) {
+    if (n == 0) { // успешно прочитано нулевое сообщение = сервер отключился
       return "";
     }
     return std::string(buffer, n);
   }
 
+  // Отправка строки серверу
   int sendToServer(std::string message) {
     int n = send(sockfd, message.c_str(), message.length(), 0);
     return n;
   }
 
+  // Проверка подключения путем отправки сообщения "ping" и ожидания ответа от
+  // сервера
   bool checkConnection() {
     sendToServer("ping");
     std::string buffer = recvFromServer();

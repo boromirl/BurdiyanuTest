@@ -20,21 +20,20 @@ public:
     close(clientfd);
   }
 
+  // создание сокета. Заполнение необходимых данных о сервере
   bool establish() {
     int n = 0; // for error handling
-    // create a TCP socket
-    // !!!!!!!!!!! add error for failed opening a socket?
     this->serverfd = socket(AF_INET, SOCK_STREAM, 0);
     /* семейство AF_UNIX подошло бы лучше для взаимодействия программ на одной
     машине. Однако, так как это тестовое задание, я решил использовать AF_INET и
     работать с программами через интернет */
+
     if (serverfd < 0) {
       perror("ERROR opening socket");
       return false;
     }
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr =
-        INADDR_ANY; // !!!! how does it generate an address?
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(this->port);
     n = bind(serverfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     if (n < 0) {
@@ -42,8 +41,7 @@ public:
       return false;
     }
 
-    // !!! I'm not sure if server should start to listen here or in run
-    n = listen(serverfd, 5); // !!!! maybe just 1? I only need one connection?
+    n = listen(serverfd, 5); // не обязательно 5, можно и меньше
     if (n < 0) {
       perror("ERROR on listen");
       return false;
@@ -52,6 +50,7 @@ public:
     return true;
   }
 
+  // Прослушивание и принятие соединения от клиента
   bool connectToClient() {
     socklen_t clilen = sizeof(cli_addr);
     std::cout << "== Listening... ==" << std::endl;
@@ -65,21 +64,24 @@ public:
     return true;
   }
 
-  bool readFromClient(std::string &str) {
+  // Получение данных от клиента
+  bool recvFromClient(std::string &str) {
     char buffer[255];
-    int n = recv(clientfd, buffer, 255, 0); // !!! 255 or more?
+    int n = recv(clientfd, buffer, 255, 0);
     if (n < 0) {
       perror("ERROR reading from socket");
       return false;
     }
-    if (n == 0) { // client disconnected
+    if (n == 0) { // клиент отключился
       return false;
     }
     str = std::string(buffer, n);
     return true;
   }
 
-  void writeToClient(const std::string &message) {
+  // Отправка данных клиенту (используется только для подтверждения наличия
+  // подключения)
+  void sendToClient(const std::string &message) {
     int n = send(clientfd, message.c_str(), message.length(), 0);
     if (n < 0) {
       perror("ERROR writing to socket");
@@ -87,6 +89,4 @@ public:
   }
 
   void disconnectFromClient() { close(clientfd); }
-
-  // !!! void shutdown()? i don't need it, but i may make it
 };

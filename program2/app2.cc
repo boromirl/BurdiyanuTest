@@ -8,14 +8,15 @@ int main() {
   server.establish();
   server.connectToClient();
 
+  // Основной цикл. Прослушивает сокет на сообщения от клиента
   while (1) {
     std::string str;
-    if (!server.readFromClient(str)) {
+    if (!server.recvFromClient(str)) {
       std::cout << "== ERROR. No connection ==" << std::endl;
-      server.disconnectFromClient();
+      server.disconnectFromClient(); // переподключение к клиенту
       server.connectToClient();
-    } else if (str == "ping") {
-      server.writeToClient("pong");
+    } else if (str == "ping") { // клиент проверяет соединение
+      server.sendToClient("pong");
     } else {
       bool res = func_3(str);
       if (res) {
