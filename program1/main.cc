@@ -13,6 +13,8 @@
 
 #include "../include/mylib.h"
 
+#include <atomic>
+
 class TCPClient {
 private:
   int sockfd;
@@ -22,7 +24,7 @@ public:
 
   ~TCPClient() { close(sockfd); }
 
-  bool establish() { // !!! rename ???
+  bool establish() {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
       perror("ERROR opening socket");
@@ -32,7 +34,6 @@ public:
     return true;
   }
 
-  // !!! default values???
   bool connectToServer(std::string hostname = "localhost", int port = 5000,
                        int delay = 3) {
     struct hostent *server;
@@ -121,6 +122,8 @@ private:
   std::mutex mtx;
   std::condition_variable condition_variable;
 
+  std::atomic<bool> is_running = true;
+
   bool is_valid(std::string str) {
     if (str.length() > 64) {
       return false;
@@ -145,10 +148,16 @@ public:
   void job1() {
     std::string str;
 
-    while (1) {
+    while (is_running) {
       std::this_thread::sleep_for(std::chrono::milliseconds(300));
       std::cout << "Enter a string: " << std::endl;
       getline(std::cin, str);
+
+      if (str == "q") {
+        is_running = false;
+        condition_variable.notify_one();
+        break;
+      }
 
       if (is_valid(str)) {
         // std::cout << "== Entered string \"" << str
@@ -177,10 +186,15 @@ public:
     std::string str;
     client.connectToServer();
 
-    while (1) {
+    while (is_running) {
       std::unique_lock<std::mutex> ul(mtx);
-      condition_variable.wait(ul,
-                              [this]() { return !this->buffer_queue.empty(); });
+      condition_variable.wait(
+          ul, [this]() { return !is_running || !this->buffer_queue.empty(); });
+
+      if (!is_running) {
+        break;
+      }
+
       // lock mutex when using shared resource
       str = this->buffer_queue.front();
       this->buffer_queue.pop();
