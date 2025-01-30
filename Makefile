@@ -17,7 +17,7 @@ mylib.so:
 EXEC_1 = app1
 EXEC_2 = app2
 program1: mylib.so
-	${CXX} ${CXXFLAGS} program1/main.cc -o ${EXEC_1} -L. -l${LIB_NAME}
+	${CXX} ${CXXFLAGS} program1/app1.cc -o ${EXEC_1} -L. -l${LIB_NAME}
 
 program2: mylib.so
 	${CXX} ${CXXFLAGS} program2/main.cc -o ${EXEC_2} -L. -l${LIB_NAME}
