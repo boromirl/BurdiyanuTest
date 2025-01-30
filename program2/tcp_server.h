@@ -32,6 +32,13 @@ public:
       perror("ERROR opening socket");
       return false;
     }
+
+    int opt = 1;
+    if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+      perror("setsockopt failed");
+      return false;
+    }
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(this->port);
