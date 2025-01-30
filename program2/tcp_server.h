@@ -1,12 +1,9 @@
 #include <netinet/in.h>
 #include <stdio.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <iostream>
-
-#include "../include/mylib.h"
 
 class TCPServer {
 private:
@@ -90,31 +87,3 @@ public:
 
   // !!! void shutdown()? i don't need it, but i may make it
 };
-
-int main() {
-  TCPServer server(5000);
-  server.establish();
-  server.connectToClient();
-
-  while (1) {
-    std::string str;
-    if (!server.readFromClient(str)) {
-      server.disconnectFromClient();
-      server.connectToClient();
-    } else if (str == "ping") {
-      server.writeToClient("pong");
-    } else {
-      bool res = func_3(str);
-      if (res) {
-        std::cout << "== Successfully got the right message: \"" << str
-                  << "\" ==" << std::endl;
-      } else {
-        std::cout << "== ERROR. Message: \"" << str
-                  << "\" is incorrect ==" << std::endl;
-      }
-    }
-  }
-
-  server.disconnectFromClient();
-  return 0;
-}
