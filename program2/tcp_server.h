@@ -54,11 +54,14 @@ public:
 
   bool connectToClient() {
     socklen_t clilen = sizeof(cli_addr);
+    std::cout << "== Listening... ==" << std::endl;
     this->clientfd = accept(serverfd, (struct sockaddr *)&cli_addr, &clilen);
     if (clientfd < 0) {
       perror("ERROR on access");
       return false;
     }
+
+    std::cout << "== Connection accepted == " << std::endl;
     return true;
   }
 

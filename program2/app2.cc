@@ -11,6 +11,7 @@ int main() {
   while (1) {
     std::string str;
     if (!server.readFromClient(str)) {
+      std::cout << "== ERROR. No connection ==" << std::endl;
       server.disconnectFromClient();
       server.connectToClient();
     } else if (str == "ping") {
