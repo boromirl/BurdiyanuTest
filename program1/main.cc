@@ -54,15 +54,17 @@ public:
     while (!is_connected) {
       int n = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
       if (n < 0) {
-        perror("ERROR connecting to server");
+        perror("\n== ERROR connecting to server ==");
         std::cerr << "Retrying (try " << counter + 1 << ") in " << delay
-                  << " seconds..." << std::endl;
+                  << " seconds...\n"
+                  << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(delay));
         counter++;
       } else {
         is_connected = true;
-        std::cout << "== Successfully connected to: " << hostname << ":" << port
-                  << " ==" << std::endl;
+        std::cout << "\n== Successfully connected to: " << hostname << ":"
+                  << port << " ==\n"
+                  << std::endl;
       }
     }
 
@@ -101,7 +103,6 @@ public:
   bool checkConnection() {
     sendToServer("ping");
     std::string buffer = recvFromServer();
-    std::cout << "== buffer: \"" << buffer << "\" ==" << std::endl;
     if (buffer == "pong")
       return true;
     else {
@@ -145,15 +146,16 @@ public:
     std::string str;
 
     while (1) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(300));
       std::cout << "Enter a string: " << std::endl;
       getline(std::cin, str);
 
       if (is_valid(str)) {
-        std::cout << "== Entered string \"" << str
-                  << "\"is valid ==" << std::endl;
+        // std::cout << "== Entered string \"" << str
+        //           << "\" is valid ==" << std::endl;
         func_1(str);
-        std::cout << "== String after func_1: \"" << str
-                  << "\" ==" << std::endl;
+        // std::cout << "== String after func_1: \"" << str
+        //           << "\" ==" << std::endl;
 
         // lock mutex when using shared resource
         mtx.lock();
@@ -184,20 +186,22 @@ public:
       this->buffer_queue.pop();
       ul.unlock();
 
-      std::cout << "== Data received from first thread: \"" << str
-                << "\" ==" << std::endl;
+      std::cout << "\n== Data received from first thread: \"" << str
+                << "\" ==\n"
+                << std::endl;
 
       int res = func_2(str);
 
-      std::cout << "== Send \"" << res << "\" to program 2 ==" << std::endl;
+      // std::cout << "== Send \"" << res << "\" to program 2 ==" << std::endl;
 
       while (!client.checkConnection()) {
-        std::cout << "== Not connected. Attempt to reconnect in 3 seconds =="
+        std::cout << "\n== Not connected to the server. Attempt to reconnect "
+                     "in 3 seconds ==\n"
                   << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(3));
         client.reconnectToServer();
       }
-      client.sendToServer(str);
+      client.sendToServer(std::to_string(res));
     }
   }
 

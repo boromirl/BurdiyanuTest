@@ -109,8 +109,8 @@ int main() {
         std::cout << "== Successfully got the right message: \"" << str
                   << "\" ==" << std::endl;
       } else {
-        std::cout << "== Error message: \"" << str
-                  << "\" is wrong ==" << std::endl;
+        std::cout << "== ERROR. Message: \"" << str
+                  << "\" is incorrect ==" << std::endl;
       }
     }
   }
